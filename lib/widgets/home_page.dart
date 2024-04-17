@@ -99,6 +99,7 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
     _initialFilters = null;
 
     if (debug) {
+      await metadataDb.init();
       final logs = await metadataDb.getCatalogLog();
 
       final success = await storageService.createFile(
