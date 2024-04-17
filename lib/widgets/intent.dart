@@ -19,6 +19,7 @@ class IntentDataKeys {
   static const page = 'page';
   static const query = 'query';
   static const safeMode = 'safeMode';
+  static const debug = 'debug';
   static const uri = 'uri';
   static const widgetId = 'widgetId';
 }

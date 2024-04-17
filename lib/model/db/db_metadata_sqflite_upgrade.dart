@@ -13,6 +13,7 @@ class MetadataDbUpgrader {
   static const vaultTable = SqfliteMetadataDb.vaultTable;
   static const trashTable = SqfliteMetadataDb.trashTable;
   static const videoPlaybackTable = SqfliteMetadataDb.videoPlaybackTable;
+  static const debugTable = SqfliteMetadataDb.debugTable;
 
   // warning: "ALTER TABLE ... RENAME COLUMN ..." is not supported
   // on SQLite <3.25.0, bundled on older Android devices
@@ -39,6 +40,8 @@ class MetadataDbUpgrader {
           await _upgradeFrom9(db);
         case 10:
           await _upgradeFrom10(db);
+        case 11:
+          await _upgradeFrom11(db);
       }
       oldVersion++;
     }
@@ -375,6 +378,15 @@ class MetadataDbUpgrader {
         ', autoLock INTEGER'
         ', useBin INTEGER'
         ', lockType TEXT'
+        ')');
+  }
+
+  static Future<void> _upgradeFrom11(Database db) async {
+    debugPrint('upgrading DB from v11');
+
+    await db.execute('CREATE TABLE $debugTable('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT'
+        ', message TEXT'
         ')');
   }
 }

@@ -73,6 +73,7 @@ class PlatformMetadataFetchService implements MetadataFetchService {
     if ({MimeTypes.mp4, MimeTypes.tiff}.contains(entry.mimeType) && (entry.sizeBytes ?? 0) > 20000000) {
       await reportService.log('catalog large entry=$entry size=${entry.sizeBytes}');
     }
+    await metadataDb.logCatalog('${DateTime.now().toIso8601String()} ${entry.path ?? entry.uri}');
 
     Future<CatalogMetadata?> call() async {
       try {

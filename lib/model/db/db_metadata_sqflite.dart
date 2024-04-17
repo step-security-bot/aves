@@ -30,6 +30,7 @@ class SqfliteMetadataDb implements MetadataDb {
   static const vaultTable = 'vaults';
   static const trashTable = 'trash';
   static const videoPlaybackTable = 'videoPlayback';
+  static const debugTable = 'debug';
 
   static int _lastId = 0;
 
@@ -107,9 +108,13 @@ class SqfliteMetadataDb implements MetadataDb {
             'id INTEGER PRIMARY KEY'
             ', resumeTimeMillis INTEGER'
             ')');
+        await db.execute('CREATE TABLE $debugTable('
+            'id INTEGER PRIMARY KEY AUTOINCREMENT'
+            ', message TEXT'
+            ')');
       },
       onUpgrade: MetadataDbUpgrader.upgradeDb,
-      version: 11,
+      version: 12,
     );
 
     final maxIdRows = await _db.rawQuery('SELECT max(id) AS maxId FROM $entryTable');
@@ -160,6 +165,19 @@ class SqfliteMetadataDb implements MetadataDb {
       }
     });
     await batch.commit(noResult: true);
+  }
+
+  // debug
+
+  @override
+  Future<void> logCatalog(String message) async {
+    await _db.insert(debugTable, { 'message': message });
+  }
+
+  @override
+  Future<List<String>> getCatalogLog() async {
+    final rows = await _db.query(debugTable);
+    return rows.map((row) => row['message'] as String).toList();
   }
 
   // entries

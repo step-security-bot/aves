@@ -14,7 +14,6 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
-import androidx.core.graphics.drawable.IconCompat
 import app.loup.streams_channel.StreamsChannel
 import deckers.thibault.aves.channel.AvesByteSendingMethodCodec
 import deckers.thibault.aves.channel.calls.*
@@ -273,6 +272,7 @@ open class MainActivity : FlutterFragmentActivity() {
                 val fields = hashMapOf<String, Any?>(
                     INTENT_DATA_KEY_LAUNCHER to intent.hasCategory(Intent.CATEGORY_LAUNCHER),
                     INTENT_DATA_KEY_SAFE_MODE to intent.getBooleanExtra(EXTRA_KEY_SAFE_MODE, false),
+                    INTENT_DATA_KEY_DEBUG to intent.getBooleanExtra(EXTRA_KEY_DEBUG, false),
                 )
                 intent.getStringExtra(EXTRA_KEY_PAGE)?.let { page ->
                     val filters = extractFiltersFromIntent(intent)
@@ -418,35 +418,43 @@ open class MainActivity : FlutterFragmentActivity() {
         // so that foreground is rendered at the intended scale
         val supportAdaptiveIcon = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
-        val search = ShortcutInfoCompat.Builder(this, "search")
-            .setShortLabel(getString(R.string.search_shortcut_short_label))
-            .setIcon(IconCompat.createWithResource(this, if (supportAdaptiveIcon) R.mipmap.ic_shortcut_search else R.drawable.ic_shortcut_search))
+//        val search = ShortcutInfoCompat.Builder(this, "search")
+//            .setShortLabel(getString(R.string.search_shortcut_short_label))
+//            .setIcon(IconCompat.createWithResource(this, if (supportAdaptiveIcon) R.mipmap.ic_shortcut_search else R.drawable.ic_shortcut_search))
+//            .setIntent(
+//                Intent(Intent.ACTION_MAIN, null, this, MainActivity::class.java)
+//                    .putExtra(EXTRA_KEY_PAGE, "/search")
+//            )
+//            .build()
+//
+//        val videos = ShortcutInfoCompat.Builder(this, "videos")
+//            .setShortLabel(getString(R.string.videos_shortcut_short_label))
+//            .setIcon(IconCompat.createWithResource(this, if (supportAdaptiveIcon) R.mipmap.ic_shortcut_movie else R.drawable.ic_shortcut_movie))
+//            .setIntent(
+//                Intent(Intent.ACTION_MAIN, null, this, MainActivity::class.java)
+//                    .putExtra(EXTRA_KEY_PAGE, "/collection")
+//                    .putExtra("filters", arrayOf("{\"type\":\"mime\",\"mime\":\"video/*\"}"))
+//            )
+//            .build()
+//
+//        val safeMode = ShortcutInfoCompat.Builder(this, "safeMode")
+//            .setShortLabel(getString(R.string.safe_mode_shortcut_short_label))
+//            .setIcon(IconCompat.createWithResource(this, if (supportAdaptiveIcon) R.mipmap.ic_shortcut_safe_mode else R.drawable.ic_shortcut_safe_mode))
+//            .setIntent(
+//                Intent(Intent.ACTION_MAIN, null, this, MainActivity::class.java)
+//                    .putExtra(EXTRA_KEY_SAFE_MODE, true)
+//            )
+//            .build()
+
+        val debug = ShortcutInfoCompat.Builder(this, "debug")
+            .setShortLabel("debug")
             .setIntent(
                 Intent(Intent.ACTION_MAIN, null, this, MainActivity::class.java)
-                    .putExtra(EXTRA_KEY_PAGE, "/search")
+                    .putExtra(EXTRA_KEY_DEBUG, true)
             )
             .build()
 
-        val videos = ShortcutInfoCompat.Builder(this, "videos")
-            .setShortLabel(getString(R.string.videos_shortcut_short_label))
-            .setIcon(IconCompat.createWithResource(this, if (supportAdaptiveIcon) R.mipmap.ic_shortcut_movie else R.drawable.ic_shortcut_movie))
-            .setIntent(
-                Intent(Intent.ACTION_MAIN, null, this, MainActivity::class.java)
-                    .putExtra(EXTRA_KEY_PAGE, "/collection")
-                    .putExtra("filters", arrayOf("{\"type\":\"mime\",\"mime\":\"video/*\"}"))
-            )
-            .build()
-
-        val safeMode = ShortcutInfoCompat.Builder(this, "safeMode")
-            .setShortLabel(getString(R.string.safe_mode_shortcut_short_label))
-            .setIcon(IconCompat.createWithResource(this, if (supportAdaptiveIcon) R.mipmap.ic_shortcut_safe_mode else R.drawable.ic_shortcut_safe_mode))
-            .setIntent(
-                Intent(Intent.ACTION_MAIN, null, this, MainActivity::class.java)
-                    .putExtra(EXTRA_KEY_SAFE_MODE, true)
-            )
-            .build()
-
-        val shortcutInfoList = listOf(videos, search, safeMode)
+        val shortcutInfoList = listOf(debug)
         ShortcutManagerCompat.setDynamicShortcuts(this, shortcutInfoList)
         Log.i(LOG_TAG, "set shortcuts: ${shortcutInfoList.joinToString(", ") { v -> v.id }}")
     }
@@ -489,12 +497,14 @@ open class MainActivity : FlutterFragmentActivity() {
         const val INTENT_DATA_KEY_SAFE_MODE = "safeMode"
         const val INTENT_DATA_KEY_URI = "uri"
         const val INTENT_DATA_KEY_WIDGET_ID = "widgetId"
+        const val INTENT_DATA_KEY_DEBUG = "debug"
 
         const val EXTRA_KEY_PAGE = "page"
         const val EXTRA_KEY_FILTERS_ARRAY = "filters"
         const val EXTRA_KEY_FILTERS_STRING = "filtersString"
         const val EXTRA_KEY_SAFE_MODE = "safeMode"
         const val EXTRA_KEY_WIDGET_ID = "widgetId"
+        const val EXTRA_KEY_DEBUG = "debug"
 
         // request code to pending runnable
         val pendingStorageAccessResultHandlers = ConcurrentHashMap<Int, PendingStorageAccessResultHandler>()

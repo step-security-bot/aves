@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:aves/app_mode.dart';
 import 'package:aves/model/app/permissions.dart';
@@ -11,6 +13,8 @@ import 'package:aves/model/settings/enums/home_page.dart';
 import 'package:aves/model/settings/settings.dart';
 import 'package:aves/model/source/collection_lens.dart';
 import 'package:aves/model/source/collection_source.dart';
+import 'package:aves/ref/locales.dart';
+import 'package:aves/ref/mime_types.dart';
 import 'package:aves/services/analysis_service.dart';
 import 'package:aves/services/common/services.dart';
 import 'package:aves/services/global_search.dart';
@@ -19,6 +23,7 @@ import 'package:aves/services/widget_service.dart';
 import 'package:aves/theme/themes.dart';
 import 'package:aves/utils/android_file_utils.dart';
 import 'package:aves/widgets/collection/collection_page.dart';
+import 'package:aves/widgets/common/action_mixins/feedback.dart';
 import 'package:aves/widgets/common/basic/scaffold.dart';
 import 'package:aves/widgets/common/behaviour/routes.dart';
 import 'package:aves/widgets/common/extensions/build_context.dart';
@@ -37,6 +42,7 @@ import 'package:aves/widgets/wallpaper_page.dart';
 import 'package:aves_model/aves_model.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
@@ -55,7 +61,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with FeedbackMixin {
   AvesEntry? _viewerEntry;
   int? _widgetId;
   String? _initialRouteName, _initialSearchQuery;
@@ -88,8 +94,31 @@ class _HomePageState extends State<HomePage> {
     var appMode = AppMode.main;
     final intentData = widget.intentData ?? await IntentService.getIntentData();
     final safeMode = intentData[IntentDataKeys.safeMode] ?? false;
+    final debug = intentData[IntentDataKeys.debug] ?? false;
     final intentAction = intentData[IntentDataKeys.action];
     _initialFilters = null;
+
+    if (debug) {
+      final logs = await metadataDb.getCatalogLog();
+
+      final success = await storageService.createFile(
+        'aves_issue977_logs-${DateFormat('yyyyMMdd_HHmmss', asciiLocale).format(DateTime.now())}.txt',
+        MimeTypes.plainText,
+        Uint8List.fromList(utf8.encode(logs.join('\n'))),
+      );
+      if (success != null) {
+        if (success) {
+          showFeedback(context, FeedbackType.info, context.l10n.genericSuccessFeedback);
+        } else {
+          showFeedback(context, FeedbackType.warn, context.l10n.genericFailureFeedback);
+        }
+      }
+      unawaited(Navigator.maybeOf(context)?.pushAndRemoveUntil(
+        await _getRedirectRoute(appMode),
+            (route) => false,
+      ));
+      return;
+    }
 
     await androidFileUtils.init();
     if (!{
