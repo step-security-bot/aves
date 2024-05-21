@@ -39,6 +39,7 @@ mixin TrashMixin on SourceBase {
   }
 
   Future<Set<AvesEntry>> recoverUntrackedTrashItems() async {
+    debugPrint('TLAD recoverUntrackedTrashItems start');
     final newEntries = <AvesEntry>{};
 
     final knownPaths = allEntries.map((v) => v.trashDetails?.path).whereNotNull().toSet();
@@ -81,6 +82,7 @@ mixin TrashMixin on SourceBase {
         }
       });
     }
+    debugPrint('TLAD recoverUntrackedTrashItems end');
     return newEntries;
   }
 }

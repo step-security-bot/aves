@@ -4,6 +4,7 @@ import 'package:aves/model/covers.dart';
 import 'package:aves/services/common/output_buffer.dart';
 import 'package:aves/services/common/services.dart';
 import 'package:aves_model/aves_model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:streams_channel/streams_channel.dart';
 
@@ -78,9 +79,11 @@ class PlatformStorageService implements StorageService {
   @override
   Future<Set<String>> getUntrackedTrashPaths(Iterable<String> knownPaths) async {
     try {
+      debugPrint('TLAD getUntrackedTrashPaths call knownPaths=${knownPaths.length}');
       final result = await _platform.invokeMethod('getUntrackedTrashPaths', <String, dynamic>{
         'knownPaths': knownPaths.toList(),
       });
+      debugPrint('TLAD getUntrackedTrashPaths returned');
       return (result as List).cast<String>().toSet();
     } on PlatformException catch (e, stack) {
       await reportService.recordError(e, stack);

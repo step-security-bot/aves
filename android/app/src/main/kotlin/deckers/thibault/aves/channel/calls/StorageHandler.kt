@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.os.storage.StorageManager
+import android.util.Log
 import androidx.core.os.EnvironmentCompat
 import deckers.thibault.aves.channel.calls.Coresult.Companion.safe
 import deckers.thibault.aves.model.FieldMap
@@ -127,9 +128,13 @@ class StorageHandler(private val context: Context) : MethodCallHandler {
             return
         }
 
+        Log.i("TLAD", "getUntrackedTrashPaths 1")
         val trashDirs = context.getExternalFilesDirs(null).filterNotNull().mapNotNull { StorageUtils.trashDirFor(context, it.path) }
+        Log.i("TLAD", "getUntrackedTrashPaths 2")
         val trashItemPaths = trashDirs.flatMap { dir -> dir.listFiles()?.filterNotNull()?.mapNotNull { file -> file.path } ?: listOf() }
+        Log.i("TLAD", "getUntrackedTrashPaths 3")
         val untrackedPaths = trashItemPaths.filterNot(knownPaths::contains).toList()
+        Log.i("TLAD", "getUntrackedTrashPaths 4")
 
         result.success(untrackedPaths)
     }
