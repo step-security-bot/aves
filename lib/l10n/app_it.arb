@@ -1374,5 +1374,11 @@
   "collectionActionSetHome": "Imposta come pagina iniziale",
   "@collectionActionSetHome": {},
   "setHomeCustomCollection": "Collezione personalizzata",
-  "@setHomeCustomCollection": {}
+  "@setHomeCustomCollection": {},
+  "chipActionShowCollection": "Mostra nella Collezione",
+  "@chipActionShowCollection": {},
+  "renameProcessorHash": "Hash",
+  "@renameProcessorHash": {},
+  "settingsForceWesternArabicNumeralsTile": "Forza numeri arabi",
+  "@settingsForceWesternArabicNumeralsTile": {}
 }
