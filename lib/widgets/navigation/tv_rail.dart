@@ -6,6 +6,7 @@ import 'package:aves/model/settings/enums/home_page.dart';
 import 'package:aves/model/settings/settings.dart';
 import 'package:aves/model/source/collection_lens.dart';
 import 'package:aves/model/source/collection_source.dart';
+import 'package:aves/ref/locales.dart';
 import 'package:aves/widgets/about/about_page.dart';
 import 'package:aves/widgets/collection/collection_page.dart';
 import 'package:aves/widgets/common/basic/insets.dart';
@@ -104,28 +105,30 @@ class _TvRailState extends State<TvRail> {
                     const SizedBox(width: 16),
                     Text(
                       context.l10n.appName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 32,
                         fontWeight: FontWeight.w300,
-                        letterSpacing: 1.0,
-                        fontFeatures: [FontFeature.enable('smcp')],
+                        letterSpacing: canHaveLetterSpacing(context.locale) ? 1 : 0,
+                        fontFeatures: const [FontFeature.enable('smcp')],
                       ),
                     ),
                   ],
                 )
               : logo;
 
+          final railTheme = Theme.of(context).navigationRailTheme;
+          const double labelFontSize = 16;
           final rail = Focus(
             focusNode: _focusNode,
             skipTraversal: true,
             child: NavigationRail(
-              backgroundColor: Theme.of(context).colorScheme.background,
               extended: extended,
               destinations: navEntries
                   .map((v) => NavigationRailDestination(
                         icon: v.icon,
                         label: v.label,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                       ))
                   .toList(),
               selectedIndex: max(0, navEntries.indexWhere(((v) => v.isSelected))),
@@ -133,6 +136,8 @@ class _TvRailState extends State<TvRail> {
                 controller.focusedIndex = index;
                 navEntries[index].onSelection();
               },
+              unselectedLabelTextStyle: railTheme.unselectedLabelTextStyle?.copyWith(fontSize: labelFontSize),
+              selectedLabelTextStyle: railTheme.selectedLabelTextStyle?.copyWith(fontSize: labelFontSize),
               minExtendedWidth: TvRail.minExtendedWidth,
             ),
           );

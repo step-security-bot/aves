@@ -5,6 +5,8 @@ import 'package:aves/model/entry/entry.dart';
 import 'package:aves/model/entry/sort.dart';
 import 'package:aves/model/filters/date.dart';
 import 'package:aves/theme/durations.dart';
+import 'package:aves/theme/themes.dart';
+import 'package:aves/utils/time_utils.dart';
 import 'package:aves/widgets/common/extensions/build_context.dart';
 import 'package:aves/widgets/common/fx/transitions.dart';
 import 'package:aves/widgets/common/identity/aves_filter_chip.dart';
@@ -56,7 +58,7 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
     var firstDate = entriesByDateDescending.lastWhereOrNull((entry) => entry.bestDate != null)?.bestDate;
 
     if (lastDate != null && firstDate != null) {
-      final rangeDays = lastDate.difference(firstDate).inDays;
+      final rangeDays = lastDate.difference(firstDate).inHumanDays;
       if (rangeDays > 1) {
         if (rangeDays <= 31) {
           _level = DateLevel.ymd;
@@ -113,10 +115,10 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
     late DateTime Function(DateTime date) incrementDate;
     switch (level) {
       case DateLevel.ymd:
-        xCount = xRange.inDays;
+        xCount = xRange.inHumanDays;
         incrementDate = (date) => DateTime(date.year, date.month, date.day + 1);
       case DateLevel.ym:
-        xCount = (xRange.inDays / 30.5).round();
+        xCount = (xRange.inHumanDays / 30.5).round();
         incrementDate = (date) => DateTime(date.year, date.month + 1);
       default:
         xCount = lastDate.year - firstDate.year;
@@ -195,11 +197,11 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
 
     final colorScheme = Theme.of(context).colorScheme;
     final accentColor = colorScheme.primary;
-    final axisColor = charts.ColorUtil.fromDartColor(drawPoints ? colorScheme.onBackground : Colors.transparent);
-    final measureLineColor = charts.ColorUtil.fromDartColor(drawPoints ? colorScheme.onBackground.withOpacity(.1) : Colors.transparent);
+    final axisColor = charts.ColorUtil.fromDartColor(drawPoints ? colorScheme.onSurface : Colors.transparent);
+    final measureLineColor = charts.ColorUtil.fromDartColor(drawPoints ? colorScheme.onSurface.withOpacity(.1) : Colors.transparent);
     final histogramLineColor = charts.ColorUtil.fromDartColor(drawLine ? accentColor : Colors.white);
     final histogramPointStrikeColor = charts.ColorUtil.fromDartColor(drawPoints ? colorScheme.onSurface : Colors.transparent);
-    final histogramPointFillColor = charts.ColorUtil.fromDartColor(colorScheme.background);
+    final histogramPointFillColor = charts.ColorUtil.fromDartColor(Themes.firstLayerColor(context));
 
     final series = [
       if (drawLine || drawArea)
@@ -221,7 +223,7 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
         )..setAttribute(charts.rendererIdKey, 'customPoint'),
     ];
 
-    final locale = context.l10n.localeName;
+    final locale = context.locale;
     final timeAxisSpec = _firstDate != null && _lastDate != null
         ? TimeAxisSpec.forLevel(
             locale: locale,
@@ -230,7 +232,7 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
             last: _lastDate!,
           )
         : null;
-    final measureFormat = NumberFormat.decimalPattern(locale);
+    final tickFormatter = NumberFormat.decimalPattern(locale);
 
     final domainAxis = charts.DateTimeAxisSpec(
       renderSpec: charts.SmallTickRendererSpec(
@@ -252,7 +254,7 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
         ),
         tickFormatterSpec: charts.BasicNumericTickFormatterSpec((v) {
           // localize and hide 0
-          return (v == null || v == 0) ? '' : measureFormat.format(v);
+          return (v == null || v == 0) ? '' : tickFormatter.format(v);
         }),
       ),
       defaultRenderer: charts.LineRendererConfig(
@@ -302,8 +304,7 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
   }
 
   Widget _buildSelectionRow() {
-    final locale = context.l10n.localeName;
-    final numberFormat = NumberFormat.decimalPattern(locale);
+    final countFormatter = NumberFormat.decimalPattern(context.locale);
 
     return ValueListenableBuilder<_EntryByDate?>(
       valueListenable: _selection,
@@ -324,7 +325,7 @@ class _HistogramState extends State<Histogram> with AutomaticKeepAliveClientMixi
                 ),
                 const Spacer(),
                 Text(
-                  numberFormat.format(count),
+                  countFormatter.format(count),
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),

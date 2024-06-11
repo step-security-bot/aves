@@ -10,6 +10,8 @@ import 'package:aves/ref/unicode.dart';
 import 'package:aves/services/common/services.dart';
 import 'package:aves/theme/text.dart';
 import 'package:aves/utils/android_file_utils.dart';
+import 'package:aves/utils/time_utils.dart';
+import 'package:intl/intl.dart';
 
 extension ExtraAvesEntryProps on AvesEntry {
   bool get isValid => !isMissingAtPath && sizeBytes != 0 && width > 0 && height > 0;
@@ -50,9 +52,10 @@ extension ExtraAvesEntryProps on AvesEntry {
 
   // text
 
-  String get resolutionText {
-    final ws = width;
-    final hs = height;
+  String getResolutionText(String locale) {
+    final dimensionFormatter = NumberFormat('0', locale);
+    final ws = dimensionFormatter.format(width);
+    final hs = dimensionFormatter.format(height);
     return isRotated ? '$hs${AText.resolutionSeparator}$ws' : '$ws${AText.resolutionSeparator}$hs';
   }
 
@@ -85,7 +88,7 @@ extension ExtraAvesEntryProps on AvesEntry {
   int? get trashDaysLeft {
     final dateMillis = trashDetails?.dateMillis;
     if (dateMillis == null) return null;
-    return DateTime.fromMillisecondsSinceEpoch(dateMillis).add(TrashMixin.binKeepDuration).difference(DateTime.now()).inDays;
+    return DateTime.fromMillisecondsSinceEpoch(dateMillis).add(TrashMixin.binKeepDuration).difference(DateTime.now()).inHumanDays;
   }
 
   // storage

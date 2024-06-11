@@ -45,7 +45,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:screen_brightness/screen_brightness.dart';
 
 class EntryViewerStack extends StatefulWidget {
   final CollectionLens? collection;
@@ -80,7 +79,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
   late VideoActionDelegate _videoActionDelegate;
   final ValueNotifier<HeroInfo?> _heroInfoNotifier = ValueNotifier(null);
   bool _isEntryTracked = true;
-  Timer? _overlayHidingTimer;
+  Timer? _overlayHidingTimer, _videoPauseTimer;
 
   @override
   bool get isViewingImage => _currentVerticalPage.value == imagePage;
@@ -106,7 +105,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
   void initState() {
     super.initState();
     if (settings.maxBrightness == MaxBrightness.viewerOnly) {
-      ScreenBrightness().setScreenBrightness(1);
+      AvesApp.screenBrightness?.setScreenBrightness(1);
     }
     if (settings.keepScreenOn == KeepScreenOn.viewerOnly) {
       windowService.keepScreenOn(true);
@@ -199,6 +198,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
     _verticalScrollNotifier.dispose();
     _heroInfoNotifier.dispose();
     _stopOverlayHidingTimer();
+    _stopVideoPauseTimer();
     AvesApp.lifecycleStateNotifier.removeListener(_onAppLifecycleStateChanged);
     _unregisterWidget(widget);
     super.dispose();
@@ -248,7 +248,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
               return StreamBuilder<PiPStatus>(
                 // as of floating v2.0.0, plugin assumes activity and fails when bound via service
                 // so we do not access status stream directly, but check for support first
-                stream: device.supportPictureInPicture ? _floating.pipStatus$ : Stream.value(PiPStatus.disabled),
+                stream: device.supportPictureInPicture ? _floating.pipStatusStream : Stream.value(PiPStatus.disabled),
                 builder: (context, snapshot) {
                   var pipEnabled = snapshot.data == PiPStatus.enabled;
                   return ValueListenableBuilder<bool>(
@@ -312,11 +312,13 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
   void didPushNext() => _resetSnackBarMargin();
 
   void _overrideSnackBarMargin() {
+    MarginComputer marginComputer;
     if (isViewingImage) {
-      FeedbackMixin.snackBarMarginOverrideNotifier.value = EdgeInsets.only(bottom: ViewerBottomOverlay.actionSafeHeight(context));
+      marginComputer = (context) => EdgeInsets.only(bottom: ViewerBottomOverlay.actionSafeHeight(context));
     } else {
-      FeedbackMixin.snackBarMarginOverrideNotifier.value = FeedbackMixin.snackBarMarginDefault(context);
+      marginComputer = FeedbackMixin.snackBarMarginDefault;
     }
+    FeedbackMixin.snackBarMarginOverrideNotifier.value = marginComputer;
   }
 
   void _resetSnackBarMargin() => FeedbackMixin.snackBarMarginOverrideNotifier.value = null;
@@ -333,9 +335,10 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
         // paused: when switching to another app
         // detached: when app is without a view
         viewerController.autopilot = false;
+        _stopVideoPauseTimer();
         pauseVideoControllers();
       case AppLifecycleState.resumed:
-        availability.onResume();
+        _stopVideoPauseTimer();
       case AppLifecycleState.hidden:
         // hidden: transient state between `inactive` and `paused`
         break;
@@ -352,9 +355,16 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
       // ensure playback, in case lifecycle paused/resumed events happened when switching to PiP
       await playingController?.play();
     } else {
-      await pauseVideoControllers();
+      _startVideoPauseTimer();
     }
   }
+
+  void _startVideoPauseTimer() {
+    _stopVideoPauseTimer();
+    _videoPauseTimer = Timer(ADurations.videoPauseAppInactiveDelay, pauseVideoControllers);
+  }
+
+  void _stopVideoPauseTimer() => _videoPauseTimer?.cancel();
 
   Widget _decorateOverlay(Widget overlay) {
     return ValueListenableBuilder<double>(
@@ -890,15 +900,15 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
     switch (settings.maxBrightness) {
       case MaxBrightness.never:
       case MaxBrightness.viewerOnly:
-        await ScreenBrightness().resetScreenBrightness();
+        await AvesApp.screenBrightness?.resetScreenBrightness();
       case MaxBrightness.always:
-        await ScreenBrightness().setScreenBrightness(1);
+        await AvesApp.screenBrightness?.setScreenBrightness(1);
     }
     if (settings.keepScreenOn == KeepScreenOn.viewerOnly) {
       await windowService.keepScreenOn(false);
     }
     await mediaSessionService.release();
-    await AvesApp.showSystemUI();
+    await _showSystemUI(context, true);
     AvesApp.setSystemUIStyle(theme);
     if (!settings.useTvLayout) {
       await windowService.requestOrientation();
@@ -921,10 +931,10 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
       );
 
       try {
-        final status = await _floating.enable(
+        final status = await _floating.enable(EnableManual(
           aspectRatio: aspectRatio,
           sourceRectHint: sourceRectHint,
-        );
+        ));
         await reportService.log('Enabled picture-in-picture with status=$status');
         return status == PiPStatus.enabled;
       } on PlatformException catch (e, stack) {
@@ -939,10 +949,16 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
   // overlay
 
   Future<void> _initOverlay() async {
-    // wait for MaterialPageRoute.transitionDuration
-    // to show overlay after hero animation is complete
-    await Future.delayed(ModalRoute.of(context)!.transitionDuration * timeDilation);
-    await _onOverlayVisibleChanged();
+    final appMode = context.read<ValueNotifier<AppMode>>().value;
+    if (appMode == AppMode.screenSaver) {
+      _overlayVisible.value = false;
+      await _onOverlayVisibleChanged(animate: false);
+    } else {
+      // wait for MaterialPageRoute.transitionDuration
+      // to show overlay after hero animation is complete
+      await Future.delayed(ModalRoute.of(context)!.transitionDuration * timeDilation);
+      await _onOverlayVisibleChanged();
+    }
     _overlayInitialized = true;
   }
 
@@ -952,7 +968,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
       if (_viewLocked.value) {
         await _startOverlayHidingTimer();
       } else {
-        await AvesApp.showSystemUI();
+        await _showSystemUI(context, true);
         AvesApp.setSystemUIStyle(Theme.of(context));
       }
       if (animate) {
@@ -967,7 +983,7 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
         _frozenViewInsets = mediaQuery.viewInsets;
         _frozenViewPadding = mediaQuery.viewPadding;
       });
-      await AvesApp.hideSystemUI();
+      await _showSystemUI(context, false);
       if (animate) {
         await _overlayAnimationController.reverse();
       } else {
@@ -982,10 +998,10 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
 
   Future<void> _onViewLockedChanged() async {
     if (_viewLocked.value) {
-      await AvesApp.hideSystemUI();
+      await _showSystemUI(context, false);
       await _startOverlayHidingTimer();
     } else {
-      await AvesApp.showSystemUI();
+      await _showSystemUI(context, true);
       AvesApp.setSystemUIStyle(Theme.of(context));
       _stopOverlayHidingTimer();
       _overlayVisible.value = true;
@@ -999,4 +1015,18 @@ class _EntryViewerStackState extends State<EntryViewerStack> with EntryViewContr
   }
 
   void _stopOverlayHidingTimer() => _overlayHidingTimer?.cancel();
+
+  Future<void> _showSystemUI(BuildContext context, bool show) async {
+    final appMode = context.read<ValueNotifier<AppMode>>().value;
+    if (appMode == AppMode.screenSaver) {
+      // as of Flutter v3.22.1, calls to `SystemChrome.setEnabledSystemUIMode` hang when app is used as a screen saver
+      return;
+    }
+
+    if (show) {
+      await AvesApp.showSystemUI();
+    } else {
+      await AvesApp.hideSystemUI();
+    }
+  }
 }

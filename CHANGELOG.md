@@ -4,9 +4,51 @@ All notable changes to this project will be documented in this file.
 
 ## <a id="unreleased"></a>[Unreleased]
 
+## <a id="v1.11.2"></a>[v1.11.2] - 2024-06-11
+
+### Added
+
+- Albums / Countries / Tags: show selection in Collection
+- allow shifting dates by seconds
+
+### Changed
+
+- opening app from launcher shows home page only when exited by back button
+- Screen saver: black background, consistent with slideshow
+- upgraded Flutter to stable v3.22.2
+
+### Removed
+
+- support for Android KitKat (API 19)
+
+### Fixed
+
+- crash when cataloguing large images
+
+## <a id="v1.11.1"></a>[v1.11.1] - 2024-05-03
+
 ### Added
 
 - Cataloguing: identify Apple variant of HDR images
+- Collection: `select all` available as quick action
+- Collection: allow using hash (md5/sha1/sha256) when bulk renaming
+- Info: color palette
+- Video: external subtitle support (SRT)
+- option to force using western arabic numerals for dates
+- Persian translation (thanks امیر جهانگرد, slasb37, mimvahedi, Alireza Rashidi)
+
+### Changed
+
+- logo
+- upgraded Flutter to stable v3.19.6
+
+### Fixed
+
+- rendering of SVG with large header
+- stopping video playback when changing device orientation on Android >=13
+- printing content orientation according to page format
+
+## <a id="v1.11.0"></a>[v1.11.0] - 2024-05-01 [YANKED]
 
 ## <a id="v1.10.9"></a>[v1.10.9] - 2024-04-14
 

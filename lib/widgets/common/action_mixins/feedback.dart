@@ -21,12 +21,15 @@ import 'package:provider/provider.dart';
 
 enum FeedbackType { info, warn }
 
+typedef MarginComputer = EdgeInsets Function(BuildContext context);
+
 mixin FeedbackMixin {
-  static final ValueNotifier<EdgeInsets?> snackBarMarginOverrideNotifier = ValueNotifier(null);
+  static final ValueNotifier<MarginComputer?> snackBarMarginOverrideNotifier = ValueNotifier(null);
 
   static EdgeInsets snackBarMarginDefault(BuildContext context) {
-    final mq = context.read<MediaQueryData>();
-    return EdgeInsets.only(bottom: max(mq.effectiveBottomPadding, mq.systemGestureInsets.bottom));
+    return EdgeInsets.only(
+      bottom: context.select<MediaQueryData, double>((mq) => max(mq.effectiveBottomPadding, mq.systemGestureInsets.bottom)),
+    );
   }
 
   void dismissFeedback(BuildContext context) => ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -69,11 +72,12 @@ mixin FeedbackMixin {
         notificationOverlayEntry = showOverlayNotification(
           (context) => SafeArea(
             bottom: false,
-            child: ValueListenableBuilder<EdgeInsets?>(
+            child: ValueListenableBuilder<MarginComputer?>(
               valueListenable: snackBarMarginOverrideNotifier,
-              builder: (context, margin, child) {
+              builder: (context, marginComputer, child) {
+                final margin = (marginComputer ?? snackBarMarginDefault).call(context);
                 return AnimatedPadding(
-                  padding: margin ?? snackBarMarginDefault(context),
+                  padding: margin,
                   duration: ADurations.pageTransitionAnimation,
                   child: child,
                 );
@@ -83,7 +87,7 @@ mixin FeedbackMixin {
                 action: action != null
                     ? TextButton(
                         style: ButtonStyle(
-                          foregroundColor: MaterialStateProperty.all(snackBarTheme.actionTextColor),
+                          foregroundColor: WidgetStateProperty.all(snackBarTheme.actionTextColor),
                         ),
                         onPressed: () {
                           notificationOverlayEntry?.dismiss();
@@ -214,6 +218,8 @@ class _ReportOverlayState<T> extends State<ReportOverlay<T>> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final percentFormatter = NumberFormat.percentPattern(context.locale);
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final progressColor = colorScheme.primary;
@@ -226,7 +232,6 @@ class _ReportOverlayState<T> extends State<ReportOverlay<T>> with SingleTickerPr
           final processedCount = processed.length.toDouble();
           final total = widget.itemCount;
           final percent = total == null || total == 0 ? 0.0 : min(1.0, processedCount / total);
-          final percentFormat = NumberFormat.percentPattern();
           return FadeTransition(
             opacity: _animation,
             child: Stack(
@@ -259,7 +264,7 @@ class _ReportOverlayState<T> extends State<ReportOverlay<T>> with SingleTickerPr
                   animation: animate,
                   center: total != null
                       ? Text(
-                          percentFormat.format(percent),
+                          percentFormatter.format(percent),
                           style: const TextStyle(fontSize: fontSize),
                         )
                       : null,
@@ -347,6 +352,8 @@ class _FeedbackMessageState extends State<_FeedbackMessage> with SingleTickerPro
 
   @override
   Widget build(BuildContext context) {
+    final durationFormatter = NumberFormat('0', context.locale);
+
     final textScaler = MediaQuery.textScalerOf(context);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -384,7 +391,7 @@ class _FeedbackMessageState extends State<_FeedbackMessage> with SingleTickerPro
                 // because we cannot use the app context theme here
                 foreground: widget.progressColor,
                 center: ChangeHighlightText(
-                  '${(remainingDurationMillis / 1000).ceil()}',
+                  durationFormatter.format((remainingDurationMillis / 1000).ceil()),
                   style: contentTextStyle.copyWith(
                     shadows: [
                       Shadow(

@@ -54,7 +54,7 @@ class _RenameEntrySetPageState extends State<RenameEntrySetPage> {
     _patternTextController.addListener(_onUserPatternChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      locale = context.l10n.localeName;
+      locale = context.locale;
       _onUserPatternChanged();
     });
   }
@@ -119,14 +119,19 @@ class _RenameEntrySetPageState extends State<RenameEntrySetPage> {
                             icon: AIcons.more,
                             title: MaterialLocalizations.of(context).moreButtonTooltip,
                             items: [
-                              MetadataField.exifMake,
-                              MetadataField.exifModel,
-                            ]
-                                .map((field) => PopupMenuItem(
-                                      value: MetadataFieldNamingProcessor.keyWithField(field),
-                                      child: MenuRow(text: field.title),
-                                    ))
-                                .toList(),
+                              ...[
+                                MetadataField.exifMake,
+                                MetadataField.exifModel,
+                              ]
+                                  .map((field) => PopupMenuItem(
+                                value: MetadataFieldNamingProcessor.keyWithField(field),
+                                child: MenuRow(text: field.title),
+                              )),
+                              PopupMenuItem(
+                                value: HashNamingProcessor.key,
+                                child: MenuRow(text: l10n.renameProcessorHash),
+                              )
+                            ],
                           ),
                         ];
                       },

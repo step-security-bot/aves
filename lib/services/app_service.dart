@@ -38,6 +38,7 @@ class PlatformAppService implements AppService {
   static final _stream = StreamsChannel('deckers.thibault/aves/activity_result_stream');
 
   static final _knownAppDirs = {
+    'com.google.android.apps.photos': {'Google Photos'},
     'com.kakao.talk': {'KakaoTalkDownload'},
     'com.sony.playmemories.mobile': {'Imaging Edge Mobile'},
     'nekox.messenger': {'NekoX'},
@@ -113,7 +114,9 @@ class PlatformAppService implements AppService {
       if (result == null) return {'error': 'cancelled'};
       return result.cast<String, dynamic>();
     } on PlatformException catch (e, stack) {
-      await reportService.recordError(e, stack);
+      if (e.code != 'edit-resolve') {
+        await reportService.recordError(e, stack);
+      }
       return {'error': e.code};
     }
   }

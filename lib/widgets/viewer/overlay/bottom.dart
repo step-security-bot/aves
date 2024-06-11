@@ -30,6 +30,9 @@ class ViewerBottomOverlay extends StatefulWidget {
   final EdgeInsets? viewInsets, viewPadding;
   final MultiPageController? multiPageController;
 
+  // always keep action buttons in the lower right corner, even with RTL locales
+  static const actionsDirection = TextDirection.ltr;
+
   const ViewerBottomOverlay({
     super.key,
     required this.entries,
@@ -46,8 +49,7 @@ class ViewerBottomOverlay extends StatefulWidget {
   State<StatefulWidget> createState() => _ViewerBottomOverlayState();
 
   static double actionSafeHeight(BuildContext context) {
-    final mq = context.read<MediaQueryData>();
-    final mqPaddingBottom = max(mq.effectiveBottomPadding, mq.systemGestureInsets.bottom);
+    final mqPaddingBottom = context.select<MediaQueryData, double>((mq) => max(mq.effectiveBottomPadding, mq.systemGestureInsets.bottom));
     final buttonHeight = ViewerButtons.preferredHeight(context);
     final thumbnailHeight = (settings.showOverlayThumbnailPreview ? ViewerThumbnailPreview.preferredHeight : 0);
     return mqPaddingBottom + buttonHeight + thumbnailHeight;
@@ -186,45 +188,41 @@ class _BottomOverlayContentState extends State<_BottomOverlayContent> {
       builder: (context, child) {
         final viewInsetsPadding = (widget.viewInsets ?? EdgeInsets.zero) + (widget.viewPadding ?? EdgeInsets.zero);
         final selection = context.read<Selection<AvesEntry>?>();
-        final viewerButtonRow = Directionality(
-          // always keep action buttons in the lower right corner, even with RTL locales
-          textDirection: TextDirection.ltr,
-          child: (selection?.isSelecting ?? false)
-              ? SelectionButton(
-                  mainEntry: mainEntry,
-                  scale: _buttonScale,
-                )
-              : FocusableActionDetector(
-                  focusNode: _buttonRowFocusScopeNode,
-                  shortcuts: settings.useTvLayout
-                      ? const {
-                          SingleActivator(LogicalKeyboardKey.arrowUp): TvShowLessInfoIntent(),
-                        }
-                      : null,
-                  actions: {
-                    TvShowLessInfoIntent: CallbackAction<Intent>(onInvoke: (intent) => TvShowLessInfoNotification().dispatch(context)),
-                  },
-                  child: SafeArea(
-                    top: false,
-                    bottom: false,
-                    minimum: EdgeInsets.only(
-                      left: viewInsetsPadding.left,
-                      right: viewInsetsPadding.right,
-                    ),
-                    child: isWallpaperMode
-                        ? WallpaperButtons(
-                            entry: pageEntry,
-                            scale: _buttonScale,
-                          )
-                        : ViewerButtons(
-                            mainEntry: mainEntry,
-                            pageEntry: pageEntry,
-                            collection: widget.collection,
-                            scale: _buttonScale,
-                          ),
+        final viewerButtonRow = (selection?.isSelecting ?? false)
+            ? SelectionButton(
+                mainEntry: mainEntry,
+                scale: _buttonScale,
+              )
+            : FocusableActionDetector(
+                focusNode: _buttonRowFocusScopeNode,
+                shortcuts: settings.useTvLayout
+                    ? const {
+                        SingleActivator(LogicalKeyboardKey.arrowUp): TvShowLessInfoIntent(),
+                      }
+                    : null,
+                actions: {
+                  TvShowLessInfoIntent: CallbackAction<Intent>(onInvoke: (intent) => TvShowLessInfoNotification().dispatch(context)),
+                },
+                child: SafeArea(
+                  top: false,
+                  bottom: false,
+                  minimum: EdgeInsets.only(
+                    left: viewInsetsPadding.left,
+                    right: viewInsetsPadding.right,
                   ),
+                  child: isWallpaperMode
+                      ? WallpaperButtons(
+                          entry: pageEntry,
+                          scale: _buttonScale,
+                        )
+                      : ViewerButtons(
+                          mainEntry: mainEntry,
+                          pageEntry: pageEntry,
+                          collection: widget.collection,
+                          scale: _buttonScale,
+                        ),
                 ),
-        );
+              );
 
         final showMultiPageOverlay = mainEntry.isMultiPage && multiPageController != null;
         final collapsedPageScroller = mainEntry.isMotionPhoto;
@@ -251,8 +249,7 @@ class _BottomOverlayContentState extends State<_BottomOverlayContent> {
               (showMultiPageOverlay && collapsedPageScroller)
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      // always keep action buttons in the lower right corner, even with RTL locales
-                      textDirection: TextDirection.ltr,
+                      textDirection: ViewerBottomOverlay.actionsDirection,
                       children: [
                         SafeArea(
                           top: false,
