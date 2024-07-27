@@ -181,7 +181,7 @@ class _TvButtonRowContent extends StatelessWidget {
   }) {
     switch (action) {
       case EntryAction.toggleFavourite:
-        final favouriteTargetEntry = mainEntry.isBurst ? pageEntry : mainEntry;
+        final favouriteTargetEntry = mainEntry.isStack ? pageEntry : mainEntry;
         return FavouriteTogglerCaption(
           entries: {favouriteTargetEntry},
           enabled: enabled,
@@ -236,7 +236,7 @@ class _ViewerButtonRowContentState extends State<ViewerButtonRowContent> {
 
   AvesEntry get pageEntry => widget.pageEntry;
 
-  AvesEntry get favouriteTargetEntry => mainEntry.isBurst ? pageEntry : mainEntry;
+  AvesEntry get favouriteTargetEntry => mainEntry.isStack ? pageEntry : mainEntry;
 
   static const double padding = ViewerButtonRowContent.padding;
 
@@ -315,12 +315,7 @@ class _ViewerButtonRowContentState extends State<ViewerButtonRowContent> {
                           _popupExpandedNotifier.value = null;
                         },
                         iconSize: IconTheme.of(context).size,
-                        onMenuOpened: () {
-                          // if the menu is opened while overlay is hiding,
-                          // the popup menu button is disposed and menu items are ineffective,
-                          // so we make sure overlay stays visible
-                          const ToggleOverlayNotification(visible: true).dispatch(context);
-                        },
+                        onMenuOpened: () => PopupMenuOpenedNotification().dispatch(context),
                         popUpAnimationStyle: animations.popUpAnimationStyle,
                       ),
                     ),
@@ -487,7 +482,7 @@ class _ViewerButtonRowContentState extends State<ViewerButtonRowContent> {
           onPressed: onPressed,
         );
       case EntryAction.toggleFavourite:
-        final favouriteTargetEntry = mainEntry.isBurst ? pageEntry : mainEntry;
+        final favouriteTargetEntry = mainEntry.isStack ? pageEntry : mainEntry;
         child = FavouriteToggler(
           entries: {favouriteTargetEntry},
           focusNode: focusNode,

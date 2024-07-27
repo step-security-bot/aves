@@ -30,6 +30,7 @@ import 'package:aves/widgets/common/extensions/build_context.dart';
 import 'package:aves/widgets/common/search/page.dart';
 import 'package:aves/widgets/common/search/route.dart';
 import 'package:aves/widgets/editor/entry_editor_page.dart';
+import 'package:aves/widgets/explorer/explorer_page.dart';
 import 'package:aves/widgets/filter_grids/albums_page.dart';
 import 'package:aves/widgets/filter_grids/tags_page.dart';
 import 'package:aves/widgets/intent.dart';
@@ -66,10 +67,13 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
   int? _widgetId;
   String? _initialRouteName, _initialSearchQuery;
   Set<CollectionFilter>? _initialFilters;
+  String? _initialExplorerPath;
+  List<String>? _secureUris;
 
   static const allowedShortcutRoutes = [
-    CollectionPage.routeName,
     AlbumListPage.routeName,
+    CollectionPage.routeName,
+    ExplorerPage.routeName,
     SearchPage.routeName,
   ];
 
@@ -97,6 +101,8 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
     final debug = intentData[IntentDataKeys.debug] ?? false;
     final intentAction = intentData[IntentDataKeys.action];
     _initialFilters = null;
+    _initialExplorerPath = null;
+    _secureUris = null;
 
     if (debug) {
       await metadataDb.init();
@@ -131,7 +137,7 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
       unawaited(appInventory.initAppNames());
     }
 
-    if (intentData.isNotEmpty) {
+    if (intentData.values.whereNotNull().isNotEmpty) {
       await reportService.log('Intent data=$intentData');
       switch (intentAction) {
         case IntentActions.view:
@@ -156,6 +162,7 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
             uri = intentData[IntentDataKeys.uri];
             mimeType = intentData[IntentDataKeys.mimeType];
           }
+          _secureUris = intentData[IntentDataKeys.secureUris];
           if (uri != null) {
             _viewerEntry = await _initViewerEntry(
               uri: uri,
@@ -212,6 +219,7 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
         final extraFilters = intentData[IntentDataKeys.filters];
         _initialFilters = extraFilters != null ? (extraFilters as List).cast<String>().map(CollectionFilter.fromJson).whereNotNull().toSet() : null;
       }
+      _initialExplorerPath = intentData[IntentDataKeys.explorerPath];
     }
     context.read<ValueNotifier<AppMode>>().value = appMode;
     unawaited(reportService.setCustomKey('app_mode', appMode.toString()));
@@ -225,10 +233,10 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
         unawaited(GlobalSearch.registerCallback());
         unawaited(AnalysisService.registerCallback());
         final source = context.read<CollectionSource>();
+        source.safeMode = safeMode;
         if (source.initState != SourceInitializationState.full) {
           await source.init(
             loadTopEntriesFirst: settings.homePage == HomePageSetting.collection && settings.homeCustomCollection.isEmpty,
-            canAnalyze: !safeMode,
           );
         }
       case AppMode.screenSaver:
@@ -237,7 +245,7 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
           canAnalyze: false,
         );
       case AppMode.view:
-        if (_isViewerSourceable(_viewerEntry)) {
+        if (_isViewerSourceable(_viewerEntry) && _secureUris == null) {
           final directory = _viewerEntry?.directory;
           if (directory != null) {
             unawaited(AnalysisService.registerCallback());
@@ -330,7 +338,7 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
               // if we group bursts, opening a burst sub-entry should:
               // - identify and select the containing main entry,
               // - select the sub-entry in the Viewer page.
-              groupBursts: false,
+              stackBursts: false,
             );
             final viewerEntryPath = viewerEntry.path;
             final collectionEntry = collection.sortedEntries.firstWhereOrNull((entry) => entry.path == viewerEntryPath);
@@ -376,12 +384,15 @@ class _HomePageState extends State<HomePage> with FeedbackMixin {
         return buildRoute((context) => const AlbumListPage());
       case TagListPage.routeName:
         return buildRoute((context) => const TagListPage());
+      case ExplorerPage.routeName:
+        final path = _initialExplorerPath ?? settings.homeCustomExplorerPath;
+        return buildRoute((context) => ExplorerPage(path: path));
+      case HomeWidgetSettingsPage.routeName:
+        return buildRoute((context) => HomeWidgetSettingsPage(widgetId: _widgetId!));
       case ScreenSaverPage.routeName:
         return buildRoute((context) => ScreenSaverPage(source: source));
       case ScreenSaverSettingsPage.routeName:
         return buildRoute((context) => const ScreenSaverSettingsPage());
-      case HomeWidgetSettingsPage.routeName:
-        return buildRoute((context) => HomeWidgetSettingsPage(widgetId: _widgetId!));
       case SearchPage.routeName:
         return SearchPageRoute(
           delegate: CollectionSearchDelegate(

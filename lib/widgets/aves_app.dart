@@ -8,7 +8,6 @@ import 'package:aves/model/apps.dart';
 import 'package:aves/model/device.dart';
 import 'package:aves/model/filters/recent.dart';
 import 'package:aves/model/settings/defaults.dart';
-import 'package:aves/model/settings/enums/accessibility_animations.dart';
 import 'package:aves/model/settings/enums/display_refresh_rate_mode.dart';
 import 'package:aves/model/settings/enums/screen_on.dart';
 import 'package:aves/model/settings/enums/theme_brightness.dart';
@@ -175,7 +174,8 @@ class _AvesAppState extends State<AvesApp> with WidgetsBindingObserver {
   // Flutter has various page transition implementations for Android:
   // - `FadeUpwardsPageTransitionsBuilder` on Oreo / API 27 and below
   // - `OpenUpwardsPageTransitionsBuilder` on Pie / API 28
-  // - `ZoomPageTransitionsBuilder` on Android 10 / API 29 and above (default in Flutter v3.0.0)
+  // - `ZoomPageTransitionsBuilder` on Android 10 / API 29 and above (default in Flutter v3.22.0)
+  // - `PredictiveBackPageTransitionsBuilder` for Android 15 / API 35 intra-app predictive back
   static const defaultPageTransitionsBuilder = FadeUpwardsPageTransitionsBuilder();
   static final GlobalKey<NavigatorState> _navigatorKey = GlobalKey(debugLabel: 'app-navigator');
   static ScreenBrightness? _screenBrightness;
@@ -325,7 +325,7 @@ class _AvesAppState extends State<AvesApp> with WidgetsBindingObserver {
       WidgetsBinding.instance.addPostFrameCallback((_) => AvesApp.setSystemUIStyle(Theme.of(context)));
     }
     return Selector<Settings, bool>(
-      selector: (context, s) => s.initialized ? s.accessibilityAnimations.animate : true,
+      selector: (context, s) => s.initialized ? s.animate : true,
       builder: (context, areAnimationsEnabled, child) {
         return FutureBuilder<bool>(
           future: _shouldUseBoldFontLoader,
@@ -631,7 +631,7 @@ class _AvesAppState extends State<AvesApp> with WidgetsBindingObserver {
       final shouldReset = _exitedMainByPop;
       _exitedMainByPop = false;
 
-      if (!shouldReset && (intentData ?? {}).isEmpty) {
+      if (!shouldReset && (intentData ?? {}).values.whereNotNull().isEmpty) {
         reportService.log('Relaunch');
         return;
       }
@@ -668,7 +668,7 @@ class _AvesAppState extends State<AvesApp> with WidgetsBindingObserver {
 class AvesScrollBehavior extends MaterialScrollBehavior {
   @override
   Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
-    final animate = context.select<Settings, bool>((v) => v.accessibilityAnimations.animate);
+    final animate = context.select<Settings, bool>((v) => v.animate);
     return animate
         ? StretchingOverscrollIndicator(
             axisDirection: details.direction,

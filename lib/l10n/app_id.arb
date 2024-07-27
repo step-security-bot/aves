@@ -239,10 +239,6 @@
   "@mapStyleGoogleHybrid": {},
   "mapStyleGoogleTerrain": "Google Maps (Terrain)",
   "@mapStyleGoogleTerrain": {},
-  "mapStyleHuaweiNormal": "Petal Maps",
-  "@mapStyleHuaweiNormal": {},
-  "mapStyleHuaweiTerrain": "Petal Maps (Terrain)",
-  "@mapStyleHuaweiTerrain": {},
   "mapStyleOsmHot": "Humanitarian OSM",
   "@mapStyleOsmHot": {},
   "mapStyleStamenWatercolor": "Stamen Watercolor",
@@ -1359,8 +1355,6 @@
   "@aboutDataUsageClearCache": {},
   "entryActionCast": "Siarkan",
   "@entryActionCast": {},
-  "setHomeCustomCollection": "Koleksi kustom",
-  "@setHomeCustomCollection": {},
   "collectionActionSetHome": "Tetapkan sebagai beranda",
   "@collectionActionSetHome": {},
   "settingsThumbnailShowHdrIcon": "Tampilkan ikon HDR",
@@ -1380,5 +1374,11 @@
   "renameProcessorHash": "Hash",
   "@renameProcessorHash": {},
   "chipActionShowCollection": "Tampilkan di Koleksi",
-  "@chipActionShowCollection": {}
+  "@chipActionShowCollection": {},
+  "explorerActionSelectStorageVolume": "Pilih penyimpanan",
+  "@explorerActionSelectStorageVolume": {},
+  "selectStorageVolumeDialogTitle": "Pilih Penyimpanan",
+  "@selectStorageVolumeDialogTitle": {},
+  "setHomeCustom": "Kustom",
+  "@setHomeCustom": {}
 }

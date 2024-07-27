@@ -133,7 +133,7 @@ class _BottomOverlayContent extends StatefulWidget {
 
 class _BottomOverlayContentState extends State<_BottomOverlayContent> {
   final FocusScopeNode _buttonRowFocusScopeNode = FocusScopeNode();
-  late Animation<double> _buttonScale, _thumbnailOpacity;
+  late CurvedAnimation _buttonScale, _thumbnailOpacity;
 
   @override
   void initState() {
@@ -170,7 +170,8 @@ class _BottomOverlayContentState extends State<_BottomOverlayContent> {
   }
 
   void _unregisterWidget(_BottomOverlayContent widget) {
-    // nothing
+    _buttonScale.dispose();
+    _thumbnailOpacity.dispose();
   }
 
   @override
@@ -301,7 +302,7 @@ class ExtraBottomOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewInsets = this.viewInsets ?? MediaQuery.viewInsetsOf(context);
     final viewPadding = this.viewPadding ?? MediaQuery.viewPaddingOf(context);
-    final safePadding = (viewInsets + viewPadding).copyWith(bottom: 8) + const EdgeInsets.symmetric(horizontal: 8.0);
+    final safePadding = (viewInsets + viewPadding).copyWith(bottom: 8) + const EdgeInsets.symmetric(horizontal: 8);
 
     return Padding(
       padding: safePadding,
