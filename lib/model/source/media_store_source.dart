@@ -186,6 +186,7 @@ class MediaStoreSource extends CollectionSource {
         final contentId = entry.contentId;
         final existingEntry = knownContentIds.contains(contentId) ? knownLiveEntries.firstWhereOrNull((entry) => entry.contentId == contentId) : null;
         entry.id = existingEntry?.id ?? metadataDb.nextId;
+        debugPrint('TLAD $runtimeType refresh new entry $entry, existingEntry.id=${existingEntry?.id}');
 
         pendingNewEntries.add(entry);
         if (pendingNewEntries.length >= refreshCount) {
@@ -277,6 +278,7 @@ class MediaStoreSource extends CollectionSource {
               entriesToRefresh.add(existingEntry);
             } else {
               sourceEntry.id = metadataDb.nextId;
+              debugPrint('TLAD $runtimeType refreshUris new entry $sourceEntry');
               newEntries.add(sourceEntry);
             }
             final existingDirectory = existingEntry?.directory;
